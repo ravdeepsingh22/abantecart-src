@@ -1,17 +1,13 @@
 <?php  
 /*------------------------------------------------------------------------------
   $Id$
-
   AbanteCart, Ideal OpenSource Ecommerce Solution
   http://www.AbanteCart.com
-
   Copyright © 2011-2016 Belavier Commerce LLC
-
   This source file is subject to Open Software License (OSL 3.0)
   Lincence details is bundled with this package in the file LICENSE.txt.
   It is also available at this URL:
   <http://www.opensource.org/licenses/OSL-3.0>
-
  UPGRADE NOTE:
    Do not edit or add to this file if you wish to upgrade AbanteCart to newer
    versions in the future. If you wish to customize AbanteCart for your
@@ -23,7 +19,6 @@ if (! defined ( 'DIR_CORE' )) {
 class ControllerApiCheckoutAddress extends AControllerAPI {
 	public $error = array();
 	public $data = array();
-
 	public function post() {
         //init controller data
         $this->extensions->hk_InitData($this,__FUNCTION__);
@@ -33,7 +28,6 @@ class ControllerApiCheckoutAddress extends AControllerAPI {
 			$this->rest->sendResponse(401, array( 'error' => 'Not logged in or Login attempt failed!' ) );
 			return null;
     	} 
-
 		if (!$this->cart->hasProducts()) {
 		    //No products in the cart.
 		    $this->rest->sendResponse(200, array('status' => 2, 'error' => 'Nothing in the cart!' ) );
@@ -45,13 +39,37 @@ class ControllerApiCheckoutAddress extends AControllerAPI {
 		    $this->rest->sendResponse(200, array('status' => 3, 'error' => 'No stock for product!' ));
 		    return null;
 		}
-
 		//load language from main section
 		$this->loadLanguage('checkout/address');	
 		$this->loadModel('account/address');
 		
 		if ( $request['mode'] == 'shipping' ) {
-
+	if ( $request['action'] == 'remove' ) {
+	  if ( isset($request['address_id']) ){
+		  if ($this->model_account_address->getTotalAddresses() == 1){
+					$this->error['warning'] = $this->language->get('error_delete');
+				}
+				if ($this->customer->getAddressId() == $this->request->get['address_id']){
+					$this->error['warning'] = $this->language->get('error_default');
+				}
+				if (!$this->error){
+					$this->model_account_address->deleteAddress( $request['address_id'] );
+				 $this->rest->sendResponse( 200, array('status' => 1, 'error' => 'address removed') );
+				 return null;
+				} else{
+	 		 $this->rest->sendResponse( 200, array('status' => 0, 'error' => 'deletion of default address not allowed') );
+				 return null;
+				}
+				$this->model_account_address->deleteAddress( $request['address_id'] );
+				$this->rest->sendResponse( 200, array('status' => 1, 'success' => 'address removed ') );
+			  return null;
+			}
+else if(!isset($request['address_id']))
+{
+	$this->rest->sendResponse( 200, array('status' => 0, 'error' => 'address id missing ') );
+	return null;
+}
+			}
 			if (!$this->cart->hasShipping()) {
 				$this->rest->sendResponse( 200, array('status' => 0, 'shipping' => 'products do not require shipping') );
 				return null;
@@ -73,7 +91,6 @@ class ControllerApiCheckoutAddress extends AControllerAPI {
 				$this->rest->sendResponse( 200, array('status' => 1, 'shipping' => 'shipping address selected') );
 				return null;
 			}
-
 		   	if ( $request['action'] == 'save' ) {
 				$this->error = $this->model_account_address->validateAddressData($request);
 	    		if ( !$this->error ) {			
@@ -92,10 +109,34 @@ class ControllerApiCheckoutAddress extends AControllerAPI {
 			
 			$this->data['selected_address_id'] = $this->session->data['shipping_address_id'];	
 			$this->_build_responce_data( $request );
-
 		}
 		else if ( $request['mode'] == 'payment' ) {
-		
+			if ( $request['action'] == 'remove' ) {
+	  if ( isset($request['address_id']) ){
+		  if ($this->model_account_address->getTotalAddresses() == 1){
+					$this->error['warning'] = $this->language->get('error_delete');
+				}
+				if ($this->customer->getAddressId() == $this->request->get['address_id']){
+					$this->error['warning'] = $this->language->get('error_default');
+				}
+				if (!$this->error){
+					$this->model_account_address->deleteAddress( $request['address_id'] );
+				 $this->rest->sendResponse( 200, array('status' => 1, 'error' => 'address removed') );
+				 return null;
+				} else{
+	 		 $this->rest->sendResponse( 200, array('status' => 0, 'error' => 'deletion of default address not allowed') );
+				 return null;
+				}
+				$this->model_account_address->deleteAddress( $request['address_id'] );
+				$this->rest->sendResponse( 200, array('status' => 1, 'success' => 'address removed ') );
+			  return null;
+			}
+else if(!isset($request['address_id']))
+{
+	$this->rest->sendResponse( 200, array('status' => 0, 'error' => 'address id missing ') );
+	return null;
+}
+			}
 	    	if ( isset($request['address_id']) ) {
 				$this->session->data['payment_address_id'] = $request['address_id'];
 		  		
@@ -124,17 +165,13 @@ class ControllerApiCheckoutAddress extends AControllerAPI {
 		}
 		
         $this->extensions->hk_UpdateData($this,__FUNCTION__);
-
 		$this->rest->setResponseData( $this->data );
 		$this->rest->sendResponse( 200 );		
 	}
 	
-
 	private function _build_responce_data ( $request_data ){
-
         $addresses = array();
 		$results = $this->model_account_address->getAddresses();
-
 		foreach ($results as $result) {
       		$addresses[] = array(
         		'address_id' => $result['address_id'],
@@ -142,8 +179,6 @@ class ControllerApiCheckoutAddress extends AControllerAPI {
       		);
     	}
         $this->data['saved_addresses'] = $addresses;
-
-
 		//Build data before responce 
 		if ($this->error) {
 	      	$this->data['status'] = 'error';
@@ -216,6 +251,5 @@ class ControllerApiCheckoutAddress extends AControllerAPI {
 		
 	
 	}
-
 	
 }
